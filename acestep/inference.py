@@ -15,7 +15,7 @@ from loguru import logger
 import torch
 
 
-from acestep.audio_utils import AudioSaver, generate_uuid_from_params, normalize_audio, get_lora_weights_hash
+from acestep.audio_utils import AudioSaver, apply_fade, generate_uuid_from_params, normalize_audio, get_lora_weights_hash
 
 # HuggingFace Space environment detection
 IS_HUGGINGFACE_SPACE = os.environ.get("SPACE_ID") is not None
@@ -116,6 +116,8 @@ class GenerationParams:
     # Audio Post-Processing
     enable_normalization: bool = True
     normalization_db: float = -1.0
+    fade_in_duration: float = 0.0   # Fade in duration in seconds. 0 = no fade in.
+    fade_out_duration: float = 0.0  # Fade out duration in seconds. 0 = no fade out.
 
     # Latent Post-Processing (before VAE decode)
     latent_shift: float = 0.0       # Additive shift on DiT latents. Default 0 = no shift.
@@ -686,6 +688,21 @@ def generate_music(
                  except Exception as e:
                      logger.error(f"Normalization failed: {e}")
             # -------------------------------
+
+            # --- FADE IN / FADE OUT ---
+            if params.fade_in_duration > 0.0 or params.fade_out_duration > 0.0:
+                try:
+                    fade_in_samples = round(params.fade_in_duration * sample_rate)
+                    fade_out_samples = round(params.fade_out_duration * sample_rate)
+                    audio_tensor = apply_fade(audio_tensor, fade_in_samples, fade_out_samples)
+                    logger.info(
+                        f"[Fade] Audio {idx}: fade_in={params.fade_in_duration:.2f}s "
+                        f"({fade_in_samples} samples), fade_out={params.fade_out_duration:.2f}s "
+                        f"({fade_out_samples} samples)"
+                    )
+                except Exception as e:
+                    logger.error(f"Fade application failed: {e}")
+            # --------------------------
 
             # Generate UUID for this audio (moved from handler)
             batch_seed = seed_list[idx] if idx < len(seed_list) else seed_list[0] if seed_list else -1
