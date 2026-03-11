@@ -174,7 +174,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertTrue(message.startswith("❌"))
         self.assertIn("peft_type", message)
 
-
+    def test_load_lokr_adapter_recreates_with_dora_when_weight_decompose_enabled(self):
         """Weight-decompose config should request a second LyCORIS net with DoRA enabled."""
         decoder = _DummyDecoder()
         base_net = Mock()
