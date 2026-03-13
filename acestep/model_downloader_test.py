@@ -88,6 +88,73 @@ class TestGetCheckpointsDir(unittest.TestCase):
                 result = self.mod.get_checkpoints_dir()
             self.assertEqual(result, Path(tmp_dir).resolve() / "checkpoints")
 
+class TestCheckMainModelExists(unittest.TestCase):
+    """Tests for model_downloader.check_main_model_exists()."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load_module()
+
+    def test_returns_false_when_any_component_lacks_weights(self):
+        """check_main_model_exists rejects partial main-model component directories."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            checkpoints_dir = Path(tmp_dir)
+            for component in self.mod.MAIN_MODEL_COMPONENTS:
+                component_dir = checkpoints_dir / component
+                component_dir.mkdir()
+                (component_dir / "configuration.json").write_text("{}", encoding="utf-8")
+
+            result = self.mod.check_main_model_exists(checkpoints_dir)
+
+        self.assertFalse(result)
+
+    def test_returns_true_when_all_components_have_weights(self):
+        """check_main_model_exists accepts main-model components with weights present."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            checkpoints_dir = Path(tmp_dir)
+            for component in self.mod.MAIN_MODEL_COMPONENTS:
+                component_dir = checkpoints_dir / component
+                component_dir.mkdir()
+                (component_dir / "model.safetensors").write_text("weights", encoding="utf-8")
+
+            result = self.mod.check_main_model_exists(checkpoints_dir)
+
+        self.assertTrue(result)
+
+
+class TestCheckModelExists(unittest.TestCase):
+    """Tests for model_downloader.check_model_exists()."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load_module()
+
+    def test_returns_false_for_partial_model_directory_without_weights(self):
+        """check_model_exists rejects directories that only contain synced code files."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            model_dir = Path(tmp_dir) / "acestep-v15-turbo"
+            model_dir.mkdir()
+            (model_dir / "configuration_acestep_v15.py").write_text(
+                "# synced code only\n",
+                encoding="utf-8",
+            )
+
+            result = self.mod.check_model_exists("acestep-v15-turbo", Path(tmp_dir))
+
+        self.assertFalse(result)
+
+    def test_returns_true_when_model_weights_are_present(self):
+        """check_model_exists accepts directories that contain a weights artifact."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            model_dir = Path(tmp_dir) / "acestep-v15-turbo"
+            model_dir.mkdir()
+            (model_dir / "model.safetensors").write_text("weights", encoding="utf-8")
+
+            result = self.mod.check_model_exists("acestep-v15-turbo", Path(tmp_dir))
+
+        self.assertTrue(result)
+
 
 if __name__ == "__main__":
     unittest.main()
+
