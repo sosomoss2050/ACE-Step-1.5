@@ -48,9 +48,9 @@ class ExternalLmCaptioningTests(unittest.TestCase):
         plan = SimpleNamespace(
             bpm=1,
             duration=2.4,
-            key_scale="C minor",
-            time_signature="3/4",
-            vocal_language="English",
+            keyscale="C minor",
+            timesignature="3/4",
+            language="English",
         )
 
         result = apply_user_metadata_overrides(
@@ -66,8 +66,11 @@ class ExternalLmCaptioningTests(unittest.TestCase):
 
         self.assertEqual(result.bpm, 125)
         self.assertEqual(result.duration, 240.0)
+        self.assertEqual(result.keyscale, "D major")
         self.assertEqual(result.key_scale, "D major")
+        self.assertEqual(result.timesignature, "4/4")
         self.assertEqual(result.time_signature, "4/4")
+        self.assertEqual(result.language, "es")
         self.assertEqual(result.vocal_language, "es")
 
     def test_build_fallback_caption_uses_prompt_and_metadata(self) -> None:

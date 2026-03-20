@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from loguru import logger
+
 
 def normalized_caption(text: str) -> str:
     """Return a normalized caption string for retry and equality checks."""
@@ -31,19 +33,29 @@ def apply_user_metadata_overrides(*, plan: Any, user_metadata: dict[str, Any]) -
     if user_metadata.get("bpm") not in (None, ""):
         try:
             plan.bpm = int(user_metadata["bpm"])
-        except (TypeError, ValueError):
-            pass
+        except (TypeError, ValueError) as exc:
+            logger.debug("Ignoring invalid external LM bpm override {!r}: {}", user_metadata["bpm"], exc)
     if user_metadata.get("duration") not in (None, ""):
         try:
             plan.duration = float(user_metadata["duration"])
-        except (TypeError, ValueError):
-            pass
+        except (TypeError, ValueError) as exc:
+            logger.debug(
+                "Ignoring invalid external LM duration override {!r}: {}",
+                user_metadata["duration"],
+                exc,
+            )
     if user_metadata.get("keyscale"):
-        plan.key_scale = str(user_metadata["keyscale"]).strip()
+        keyscale = str(user_metadata["keyscale"]).strip()
+        plan.keyscale = keyscale
+        plan.key_scale = keyscale
     if user_metadata.get("timesignature"):
-        plan.time_signature = str(user_metadata["timesignature"]).strip()
+        timesignature = str(user_metadata["timesignature"]).strip()
+        plan.timesignature = timesignature
+        plan.time_signature = timesignature
     if user_metadata.get("language"):
-        plan.vocal_language = str(user_metadata["language"]).strip()
+        language = str(user_metadata["language"]).strip()
+        plan.language = language
+        plan.vocal_language = language
     return plan
 
 
