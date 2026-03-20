@@ -63,6 +63,8 @@ def build_fallback_caption(*, caption: str, user_metadata: dict[str, Any]) -> st
     """Build a simple local narrative fallback when the provider keeps echoing input."""
 
     source = (caption or "music piece").strip().rstrip(".")
+    if not source:
+        source = "music piece"
     bpm = user_metadata.get("bpm")
     duration = user_metadata.get("duration")
     keyscale = user_metadata.get("keyscale")
@@ -101,6 +103,12 @@ def build_format_request_intent(
     ]
     for key in ("bpm", "duration", "keyscale", "timesignature", "language"):
         value = user_metadata.get(key)
-        if value not in (None, "", "unknown"):
+        if isinstance(value, str):
+            normalized = value.strip()
+            if normalized.lower() in {"", "unknown"}:
+                continue
+            intent_parts.append(f"{key}: {normalized}")
+            continue
+        if value is not None:
             intent_parts.append(f"{key}: {value}")
     return "\n".join(intent_parts)

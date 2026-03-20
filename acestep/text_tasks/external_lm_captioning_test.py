@@ -92,6 +92,16 @@ class ExternalLmCaptioningTests(unittest.TestCase):
         self.assertIn("D major", caption)
         self.assertIn("240 seconds", caption)
 
+    def test_build_fallback_caption_falls_back_for_whitespace_input(self) -> None:
+        """Whitespace-only captions should fall back to the generic source phrase."""
+
+        caption = build_fallback_caption(
+            caption="   ",
+            user_metadata={},
+        )
+
+        self.assertIn("music piece unfolds", caption)
+
     def test_build_format_request_intent_omits_unknown_metadata(self) -> None:
         """Unknown metadata values should not be emitted into the request intent."""
 
@@ -113,6 +123,27 @@ class ExternalLmCaptioningTests(unittest.TestCase):
         self.assertIn("keyscale: C Major", intent)
         self.assertIn("timesignature: 4/4", intent)
         self.assertNotIn("language: unknown", intent)
+        self.assertNotIn("duration:", intent)
+
+    def test_build_format_request_intent_normalizes_unknown_string_metadata(self) -> None:
+        """Whitespace-padded unknown strings should still be filtered from the intent."""
+
+        intent = build_format_request_intent(
+            caption="Dreamy synth-pop",
+            lyrics="City lights / carry me home",
+            user_metadata={
+                "bpm": 118,
+                "duration": "  ",
+                "keyscale": " C Major ",
+                "timesignature": "4/4",
+                "language": " Unknown ",
+            },
+        )
+
+        self.assertIn("bpm: 118", intent)
+        self.assertIn("keyscale: C Major", intent)
+        self.assertIn("timesignature: 4/4", intent)
+        self.assertNotIn("language:", intent)
         self.assertNotIn("duration:", intent)
 
 
